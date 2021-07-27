@@ -1,0 +1,20 @@
+/*************************TAG SELECTORS******************************/
+body{
+  background: #FCDEC0;
+}
+h1{
+  color:#7D5A50;
+  size:180px;
+}
+
+img:hover{
+  background-color: blue;
+}
+/*************************CLASS SELECTORS******************************/
+
+.shortcake{
+  background-color: red;
+}
+.cookie{
+  background-color: green;
+}
