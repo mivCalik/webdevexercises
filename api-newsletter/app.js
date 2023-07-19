@@ -35,7 +35,7 @@ app.post("/", function(req,res){
 
   const options = {
     method :"POST",
-    auth: "merve123:8f75bd0591f7fd7475104d25d4d5cfb7-us2"     //https://nodejs.org/api/http.html#httprequestoptions-callback
+    auth: "merve123:<personal_api_key>"     //https://nodejs.org/api/http.html#httprequestoptions-callback
   }
 
   /// HTTPS request module /////
