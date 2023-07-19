@@ -7,4 +7,4 @@
 
 &nbsp;  3.   ```npm i sillyname superheroes supervillains ```  //  for requiring express 
 
-&nbsp;  4.   ```node app.js ```  //  running file 
+&nbsp;  4.   ```node index.js ```  //  running file 
