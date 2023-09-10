@@ -5,15 +5,13 @@ const bodyParser = require("body-parser");
 const ejs = require("ejs");
 
 const mongoose = require("mongoose");
-const encryt = require("mongoose-encryption");
+var md5 = require("md5");
 mongoose.connect('mongodb://127.0.0.1:27017/secretsDB');
 const userSchema = new mongoose.Schema({
   email:String,
   password: String
 });
 
-const secret = process.env.SECRET;
-userSchema.plugin(encryt, {secret:secret, encryptedFields: ["password"]});
 
 const User = new mongoose.model("User", userSchema);
 
@@ -42,7 +40,7 @@ app.post("/login", (req,res)=>{
   User.findOne({email:username})
   .then((user)=>{
     console.log(user.password);
-    if(user.password  === pw){
+    if(user.password  === md5(pw)){
       res.render("secrets");
     }else{
       console.log("wrong password");
@@ -58,14 +56,15 @@ app.get("/register", (req,res)=>{
 app.post("/register", (req,res)=>{
   const newUser = new User({
     email: req.body.username,
-    password: req.body.password
+    password: md5(req.body.password)
   });
   newUser.save()
-  .then((nu)=>{ console.log(nu);res.render("secrets");})
+  .then(()=>{res.render("secrets");})
   .catch((err)=>{console.log(err);})
 
 });
 
 app.listen(3000, ()=>{
   console.log("Server started on port 3000.");
+  //console.log(md5("123"));
 });
