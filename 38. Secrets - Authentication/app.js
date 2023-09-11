@@ -3,27 +3,45 @@ require('dotenv').config()
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
-
 const mongoose = require("mongoose");
-var md5 = require("md5");
-mongoose.connect('mongodb://127.0.0.1:27017/secretsDB');
-const userSchema = new mongoose.Schema({
-  email:String,
-  password: String
-});
+const session = require('express-session');
+const passport = require('passport');
+const passportLocalMongoose = require('passport-local-mongoose');
 
-
-const User = new mongoose.model("User", userSchema);
-
-//önce mongoose Schema tanımlayıp
-//secret ile plugin yapmalıyız
-//daha sonra model oluşturmalıyız
 
 const app = express();
 
 app.use(express.static("public"));
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extented:true}));
+
+// --->   Tam burası  (app.use sonrası ve before establish of mongoose.connect)
+app.use(session({
+  secret: "someBullshit123*",
+  resave: false,
+  saveUninitialized:false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+mongoose.connect('mongodb://127.0.0.1:27017/secretsDB');
+//önce mongoose Schema tanımlayıp
+//secret ile plugin yapmalıyız
+//daha sonra model oluşturmalıyız
+const userSchema = new mongoose.Schema({
+  email:String,
+  password: String
+});
+
+userSchema.plugin(passportLocalMongoose);
+
+
+const User = new mongoose.model("User", userSchema);
+
+passport.use(User.createStrategy());
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 
 app.get("/", (req,res)=>{
@@ -33,20 +51,20 @@ app.get("/", (req,res)=>{
 app.get("/login", (req,res)=>{
   res.render("login");
 });
-app.post("/login", (req,res)=>{
-  const username = req.body.username;
-  const pw = req.body.password;
 
-  User.findOne({email:username})
-  .then((user)=>{
-    console.log(user.password);
-    if(user.password  === md5(pw)){
-      res.render("secrets");
-    }else{
-      console.log("wrong password");
-    }
-    })
-  .catch((err)=>{console.log( "NOT FOUND\n\n", err);})
+app.get("/logout", (req,res)=>{
+  req.logout(()=>{
+    res.redirect("/");
+  });
+
+})
+
+app.get("/secrets", (req,res)=>{
+  if(req.isAuthenticated()){
+    res.render("secrets");
+  }else{
+    res.redirect("/login");
+  }
 })
 
 app.get("/register", (req,res)=>{
@@ -54,15 +72,34 @@ app.get("/register", (req,res)=>{
 });
 
 app.post("/register", (req,res)=>{
-  const newUser = new User({
-    email: req.body.username,
-    password: md5(req.body.password)
-  });
-  newUser.save()
-  .then(()=>{res.render("secrets");})
-  .catch((err)=>{console.log(err);})
+  User.register({username:req.body.username}, req.body.password, (err,user)=>{
+    if(err){
+      console.log(err);
+      res.redirect('/register');
+    }else{
+      passport.authenticate("local")(req,res,()=>{
+        res.redirect("/secrets");
+    })
+    }
+  })
 
 });
+
+app.post("/login", (req,res)=>{
+  const user = new User({
+    username: req.body.username,
+    password: req.body.password
+  });
+  req.login(user, (err)=>{
+    if(err){
+      console.log(err);
+    }else{
+      passport.authenticate("local")(req,res,()=>{
+        res.redirect("/secrets");
+    });
+    }
+  })
+})
 
 app.listen(3000, ()=>{
   console.log("Server started on port 3000.");
